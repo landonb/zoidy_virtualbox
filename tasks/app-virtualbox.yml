@@ -1,0 +1,143 @@
+---
+
+# FIXME/2019-03-14: Because Secure Boot (I think that's it), need to sign VirtualBox drivers.
+#   So this task will run, but you won't be able to boot any virtual machines.
+
+# FIXME/2018-12-26: Incorporate checksums.
+#   https://www.virtualbox.org/download/hashes/6.0.0/SHA256SUMS
+
+# MAYBE/2018-12-26: For now, manually install Ext Pack from within app
+#   (need to agree to EULA). Not sure if way to automate or not.
+
+# ***
+
+#- debug: var=ansible_facts
+
+- debug: var=ansible_kernel
+
+# ***
+
+# ansible_facts.kernel Same as `uname -r`.
+- set_fact:
+    zoidy_headers_kernel: linux-headers-{{ ansible_kernel }}
+
+- name: 'Install linux headers required by VirtualBox'
+  become: true
+  apt: name={{ item }}
+  loop:
+    - linux-headers-generic
+    - "{{ zoidy_headers_kernel }}"
+
+- name: 'Query latest VirtualBox version'
+  get_url:
+    url: "http://download.virtualbox.org/virtualbox/LATEST.TXT"
+    dest: "{{ zoidy_virtualbox_downloads_dir }}/virtualbox-LATEST.TXT"
+
+- name: Read VirtualBox latest version
+  command: cat "{{ zoidy_virtualbox_downloads_dir }}/virtualbox-LATEST.TXT"
+  register: virtualbox_latest_version
+
+- set_fact:
+    zoidy_vbox_version_index: "virtualbox-version-{{ virtualbox_latest_version.stdout }}-index.htm"
+
+- set_fact:
+    zoidy_vbox_version_path: "{{ zoidy_virtualbox_downloads_dir }}/{{ zoidy_vbox_version_index }}"
+
+- name: 'Query latest VirtualBox builds'
+  get_url:
+    url: "http://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version.stdout }}/"
+    dest: "{{ zoidy_vbox_version_path }}"
+
+- name: Read VirtualBox latest build URI
+  # Yaml lesson: `shell: |` multiline preserves newlines, so `\` continuations required.
+  #   `shell: >` multiline gobbles newlines, so Bash line continuations unnecessary.
+  shell: >
+    /bin/grep "{{ zoidy_distrib_codename }}_amd64" {{ zoidy_vbox_version_path }}
+    | /bin/sed -r s/\<[^\>]*\>//g
+    | /bin/sed -r s/^[\ ]\+\(.*\.deb\).*$/\\1/
+  register: virtualbox_deb_pkg
+
+- fail: msg="Undiscerned download URL!"
+  when: not virtualbox_deb_pkg.stdout
+
+- name: 'Downlaod latest VirtualBox'
+  get_url:
+    # E.g.,
+    #   https://download.virtualbox.org/virtualbox/6.0.0/virtualbox-6.0_6.0.0-127566~Ubuntu~bionic_amd64.deb
+    url: "https://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version.stdout }}/{{ virtualbox_deb_pkg.stdout }}"
+    dest: "{{ zoidy_virtualbox_downloads_dir }}/{{ virtualbox_deb_pkg.stdout }}"
+
+- name: Install VirtualBox package
+  become: yes
+  # E.g., sudo dpkg -i xxx
+  apt:
+    deb: "{{ zoidy_virtualbox_downloads_dir }}/{{ virtualbox_deb_pkg.stdout }}"
+
+# ***
+
+- name: 'Downlaod VirtualBox Extension Pack'
+  get_url:
+    # E.g.,
+    #   https://download.virtualbox.org/virtualbox/6.0.0/Oracle_VM_VirtualBox_Extension_Pack-6.0.0.vbox-extpack
+    url: "https://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version.stdout }}/Oracle_VM_VirtualBox_Extension_Pack-{{ virtualbox_latest_version.stdout }}.vbox-extpack"
+    dest: "{{ zoidy_virtualbox_downloads_dir }}/"
+
+# ***
+
+- name: Remove old VirtualBox indices
+  # E.g., ./oracle_virtualbox_download_index_5.1.6.html
+  # Yaml lesson: Even though `>` used, `\` continuation needed
+  # when continued lines begin with whitespace.
+  shell: >
+    find . -maxdepth 1 \
+      -name "virtualbox-version-[0-9]*\\.[0-9]*\\.[0-9]*-index\\.htm" \
+      -exec echo {} + \
+    | /bin/sed s/\\.\\/{{ zoidy_vbox_version_index }}// \
+    | xargs /bin/rm &> /dev/null
+    #| xargs echo
+  args:
+    chdir: "{{ zoidy_virtualbox_downloads_dir }}"
+  #register: zoidy_rm_vbox_indices
+
+#- debug: msg="zoidy_rm_vbox_indices∷ {{ zoidy_rm_vbox_indices.stdout }}"
+
+- name: Remove old VirtualBox packages
+  # E.g., ./virtualbox-5.1_5.1.6-110634~Ubuntu~trusty_amd64.deb
+  shell: >
+    find . -maxdepth 1 \
+      -name "virtualbox-[0-9]*\\.[0-9]*_[0-9]*\\.[0-9]*\\.[0-9]*-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb" \
+      -exec echo {} + \
+      | /bin/sed s/\\.\\/virtualbox-[0-9]*\\.[0-9]*_{{ virtualbox_latest_version.stdout }}-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb// \
+      | xargs /bin/rm &> /dev/null
+      #| xargs echo
+  args:
+    chdir: "{{ zoidy_virtualbox_downloads_dir }}"
+  #register: zoidy_rm_vbox_packages
+
+#- debug: msg="zoidy_rm_vbox_packages∷ {{ zoidy_rm_vbox_packages.stdout }}"
+
+- name: Remove old VirtualBox Extension Packs
+  # E.g., ./Oracle_VM_VirtualBox_Extension_Pack-6.0.0.vbox-extpack
+  shell: >
+    find . -maxdepth 1 \
+      -name "Oracle_VM_VirtualBox_Extension_Pack-[0-9]*\\.[0-9]*\\.[0-9]\\.vbox-extpack" \
+      -exec echo {} + \
+      | /bin/sed s/\\.\\/Oracle_VM_VirtualBox_Extension_Pack-{{ virtualbox_latest_version.stdout }}\\.vbox-extpack// \
+      | xargs /bin/rm &> /dev/null
+      #| xargs echo
+  args:
+    chdir: "{{ zoidy_virtualbox_downloads_dir }}"
+  #register: zoidy_rm_vbox_extpacks
+
+#- debug: msg="zoidy_rm_vbox_extpacks∷ {{ zoidy_rm_vbox_extpacks.stdout }}"
+
+# FIXME/2018-12-27: Audit this, now that 6.0 is out: 2 groups still valid?: vboxsf, vboxusers
+- name: 'Add user to VirtualBox groups'
+  become: true
+  user:
+    name: "{{ ansible_env.LOGNAME }}"
+    # 2019-03-14: Maybe add back vboxsf (I think that's the shared file system driver).
+    # groups: vboxsf, vboxusers
+    groups: vboxusers
+    append: yes
+

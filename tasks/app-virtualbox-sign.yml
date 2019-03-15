@@ -1,0 +1,105 @@
+---
+
+- name: Stat VirtualBox driver signing key
+  become: yes
+  stat: path="{{ zoidy_virtualbox_keys_path }}/MOK-virtualbox.der"
+  register: mok_virtualbox_der_f
+
+- name: Ensure path to VirtualBox driver signing files
+  file: path={{ zoidy_virtualbox_keys_path }} state=directory
+  become: yes
+  when: not mok_virtualbox_der_f.stat.exists
+
+- name: Create VirtualBox driver signing key
+  become: yes
+  shell: |
+    openssl req \
+      -new \
+      -x509 \
+      -newkey rsa:2048 \
+      -keyout MOK-virtualbox.priv \
+      -outform DER \
+      -out MOK-virtualbox.der \
+      -nodes \
+      -days 36500 \
+      -subj "/CN=VirtualBoxModuleSigningKey/"
+    # OUTPUT:
+    # Generating a 2048 bit RSA private key
+    # ..................................+++
+    # .............................................+++
+    # writing new private key to 'MOK.priv'
+    # -----
+    #
+    # True afterwards/not necessary:
+    #   chmod 600 MOK-virtualbox.priv
+  args:
+    chdir: "{{ zoidy_virtualbox_keys_path }}"
+  when: not mok_virtualbox_der_f.stat.exists
+
+# ***
+
+- name: Sign VirtualBox modules with driver signing key
+  become: yes
+  shell: |
+    for modfile in $(dirname $(modinfo -n vboxdrv))/*.ko; do
+        echo "Signing $modfile"
+        /usr/src/linux-headers-$(uname -r)/scripts/sign-file \
+          sha256 \
+            "{{ zoidy_virtualbox_keys_path }}/MOK-virtualbox.priv" \
+            "{{ zoidy_virtualbox_keys_path }}/MOK-virtualbox.der" \
+            "$modfile"
+      done
+
+# E.g., `modprobe vboxdrv`.
+- name: Load ‘vboxdrv’ module
+  become: yes
+  modprobe:
+    name: vboxdrv
+    state: present
+  when: False
+#  when: mok_virtualbox_der_f.stat.exists
+
+# ***
+
+# Multiline output trickery, thanks to-
+#   https://stackoverflow.com/questions/34188167/
+#     ansible-print-message-debug-msg-line1-n-var2-n-line3-with-var3
+# NOTE: This doesn't work with the fail module, apparently, but does with debug.
+- name: Print several lines of text
+  vars:
+    msg: |
+      Import the MOK key and reboot the host to finishing installing VirtualBox.
+
+      First, import the key:
+
+        mokutil --import "{{ zoidy_virtualbox_keys_path }}/MOK-virtualbox.der"
+
+      Then, reboot, and perform MOK management:
+
+        Title: Shim UEFI key management
+        Body: Press any key to perform MOK management
+
+        Title: Perform MOK management
+        Body:
+          Continue boot
+        ✓ Enroll MOK
+          Enroll key from disk
+          Enroll hash from disk
+
+        Title: [Enroll MOK]
+        Body:
+          View key 0
+        ✓ Continue
+
+        Title: Enroll the key(s)?
+        Body:
+          No
+        ✓ Yes
+  debug:
+    msg: "{{ msg.split('\n') }}"
+  when: not mok_virtualbox_der_f.stat.exists
+
+- name: Fail if so
+  fail: msg="See previous message for reason"
+  when: not mok_virtualbox_der_f.stat.exists
+

@@ -1,3 +1,9 @@
 ---
-# defaults file for zoidy_virtualbox
+# Main task: Load package installers, or not, based on tags.
+
+- name: Load all tasks
+  include_role:
+    name: zoidy_virtualbox
+    tasks_from: all
+  tags: always
 

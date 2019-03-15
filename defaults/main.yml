@@ -1,3 +1,7 @@
 ---
 # defaults file for zoidy_virtualbox
 
+zoidy_virtualbox_downloads_dir: "{{ ansible_env.HOME }}/.downloads"
+
+zoidy_virtualbox_keys_path: "/root/vbox-module-signing"
+

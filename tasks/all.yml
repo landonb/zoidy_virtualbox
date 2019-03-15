@@ -1,0 +1,36 @@
+---
+
+# *** Verify distro.
+
+- set_fact:
+    zoidy_distrib_codename_: 'bionic'
+  when: ansible_lsb.codename == 'tara'
+  tags: always
+
+- fail: msg="Unexpected distro∷ “{{ ansible_facts.lsb.codename }}”"
+  when: zoidy_distrib_codename_ is not defined
+  tags: always
+
+# *** Run tasks.
+
+- name: Load role to Download, Get Setup, and Install VirtualBox
+  include_role:
+    name: zoidy_virtualbox
+    tasks_from: app-virtualbox
+    apply:
+      tags:
+        - app-virtualbox
+  vars:
+    zoidy_distrib_codename: "{{ zoidy_distrib_codename_ }}"
+  tags: app-virtualbox
+
+- name: Sign VirtualBox Drivers
+  include_role:
+    name: zoidy_virtualbox
+    tasks_from: app-virtualbox-sign
+    apply:
+      tags:
+        - app-virtualbox
+        - app-virtualbox-sign
+  tags: app-virtualbox, app-virtualbox-sign
+
