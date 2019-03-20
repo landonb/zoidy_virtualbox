@@ -1,7 +1,7 @@
 ---
 # Main task: Load package installers, or not, based on tags.
 
-- name: Load all tasks
+- name: Load tasks dispatcher for ‘zoidy_virtualbox’
   include_role:
     name: zoidy_virtualbox
     tasks_from: all
