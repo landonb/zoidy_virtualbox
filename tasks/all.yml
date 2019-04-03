@@ -4,7 +4,7 @@
 
 - set_fact:
     zoidy_distrib_codename_: 'bionic'
-  when: ansible_lsb.codename == 'tara'
+  when: ansible_lsb.codename in ['tara', 'tessa',]
   tags: always
 
 - fail: msg="Unexpected distro∷ “{{ ansible_facts.lsb.codename }}”"
