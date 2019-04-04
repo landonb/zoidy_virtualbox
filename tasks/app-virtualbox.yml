@@ -60,7 +60,7 @@
 - fail: msg="Undiscerned download URL!"
   when: not virtualbox_deb_pkg.stdout
 
-- name: 'Downlaod latest VirtualBox'
+- name: 'Download latest VirtualBox'
   get_url:
     # E.g.,
     #   https://download.virtualbox.org/virtualbox/6.0.0/virtualbox-6.0_6.0.0-127566~Ubuntu~bionic_amd64.deb
@@ -75,7 +75,7 @@
 
 # ***
 
-- name: 'Downlaod VirtualBox Extension Pack'
+- name: 'Download VirtualBox Extension Pack'
   get_url:
     # E.g.,
     #   https://download.virtualbox.org/virtualbox/6.0.0/Oracle_VM_VirtualBox_Extension_Pack-6.0.0.vbox-extpack
