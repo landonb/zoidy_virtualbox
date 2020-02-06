@@ -53,8 +53,8 @@
   #   `shell: >` multiline gobbles newlines, so Bash line continuations unnecessary.
   shell: >
     /bin/grep "{{ zoidy_distrib_codename }}_amd64" {{ zoidy_vbox_version_path }}
-    | /bin/sed -r s/\<[^\>]*\>//g
-    | /bin/sed -r s/^[\ ]\+\(.*\.deb\).*$/\\1/
+    | sed -E s/\<[^\>]*\>//g
+    | sed -E s/^[\ ]\+\(.*\.deb\).*$/\\1/
   register: virtualbox_deb_pkg
 
 - fail: msg="Undiscerned download URL!"
@@ -92,7 +92,7 @@
     find . -maxdepth 1 \
       -name "virtualbox-version-[0-9]*\\.[0-9]*\\.[0-9]*-index\\.htm" \
       -exec echo {} + \
-    | /bin/sed s/\\.\\/{{ zoidy_vbox_version_index }}// \
+    | sed s/\\.\\/{{ zoidy_vbox_version_index }}// \
     | xargs /bin/rm &> /dev/null
     #| xargs echo
   args:
@@ -107,7 +107,7 @@
     find . -maxdepth 1 \
       -name "virtualbox-[0-9]*\\.[0-9]*_[0-9]*\\.[0-9]*\\.[0-9]*-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb" \
       -exec echo {} + \
-      | /bin/sed s/\\.\\/virtualbox-[0-9]*\\.[0-9]*_{{ virtualbox_latest_version.stdout }}-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb// \
+      | sed s/\\.\\/virtualbox-[0-9]*\\.[0-9]*_{{ virtualbox_latest_version.stdout }}-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb// \
       | xargs /bin/rm &> /dev/null
       #| xargs echo
   args:
@@ -122,7 +122,7 @@
     find . -maxdepth 1 \
       -name "Oracle_VM_VirtualBox_Extension_Pack-[0-9]*\\.[0-9]*\\.[0-9]\\.vbox-extpack" \
       -exec echo {} + \
-      | /bin/sed s/\\.\\/Oracle_VM_VirtualBox_Extension_Pack-{{ virtualbox_latest_version.stdout }}\\.vbox-extpack// \
+      | sed s/\\.\\/Oracle_VM_VirtualBox_Extension_Pack-{{ virtualbox_latest_version.stdout }}\\.vbox-extpack// \
       | xargs /bin/rm &> /dev/null
       #| xargs echo
   args:
