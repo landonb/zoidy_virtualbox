@@ -41,7 +41,7 @@
 - name: Sign VirtualBox modules with driver signing key
   become: yes
   shell: |
-    for modfile in $(dirname $(modinfo -n vboxdrv))/*.ko; do
+    for modfile in $(dirname -- "$(modinfo -n vboxdrv)")/*.ko; do
         echo "Signing $modfile"
         /usr/src/linux-headers-$(uname -r)/scripts/sign-file \
           sha256 \
