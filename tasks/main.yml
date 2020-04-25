@@ -6,6 +6,6 @@
     name: zoidy_virtualbox
     tasks_from: all
   tags:
-    - app-virtualbox
-    - app-virtualbox-sign
+    - app-virtualbox-5
+    - app-virtualbox-5-sign
 

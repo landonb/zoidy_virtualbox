@@ -16,23 +16,23 @@
 - name: Load role to Download, Get Setup, and Install VirtualBox
   include_role:
     name: zoidy_virtualbox
-    tasks_from: app-virtualbox
+    tasks_from: app-virtualbox-5
     apply:
       tags:
-        - app-virtualbox
+        - app-virtualbox-5
   vars:
     zoidy_distrib_codename: "{{ zoidy_distrib_codename_ }}"
-  tags: app-virtualbox
+  tags: app-virtualbox-5
 
 - name: Sign VirtualBox Drivers
   include_role:
     name: zoidy_virtualbox
-    tasks_from: app-virtualbox-sign
+    tasks_from: app-virtualbox-5-sign
     apply:
       tags:
-        - app-virtualbox
-        - app-virtualbox-sign
+        - app-virtualbox-5
+        - app-virtualbox-5-sign
   tags:
-    - app-virtualbox
-    - app-virtualbox-sign
+    - app-virtualbox-5
+    - app-virtualbox-5-sign
 
