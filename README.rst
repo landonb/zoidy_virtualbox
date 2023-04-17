@@ -6,7 +6,7 @@ An Ansible role to install VirtualBox, and to sign the drivers to appease Secure
 
 - DEPRECATED: VirtualBox 6.0 and later are published to an apt repository. Use that instead!
 
-  https://github.com/landonb/zoidy_home-fries/blob/master/tasks/app-virtualbox.yml
+  https://github.com/landonb/zoidy_apps_et_al/blob/master/tasks/app-virtualbox.yml
 
 Example Playbook
 ================
