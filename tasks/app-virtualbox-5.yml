@@ -23,7 +23,7 @@
 
 - name: 'Install linux headers required by VirtualBox'
   become: true
-  apt: name={{ item }}
+  ansible.builtin.apt: name={{ item }}
   loop:
     - linux-headers-generic
     - "{{ zoidy_headers_kernel }}"
@@ -51,7 +51,7 @@
 - name: Read VirtualBox latest build URI
   # Yaml lesson: `shell: |` multiline preserves newlines, so `\` continuations required.
   #   `shell: >` multiline gobbles newlines, so Bash line continuations unnecessary.
-  shell: >
+  ansible.builtin.shell: >
     /bin/grep "{{ zoidy_distrib_codename }}_amd64" {{ zoidy_vbox_version_path }}
     | sed -E s/\<[^\>]*\>//g
     | sed -E s/^[\ ]\+\(.*\.deb\).*$/\\1/
@@ -70,7 +70,7 @@
 - name: Install VirtualBox package
   become: yes
   # E.g., sudo dpkg -i xxx
-  apt:
+  ansible.builtin.apt:
     deb: "{{ zoidy_virtualbox_downloads_dir }}/{{ virtualbox_deb_pkg.stdout }}"
 
 # ***
@@ -88,7 +88,7 @@
   # E.g., ./oracle_virtualbox_download_index_5.1.6.html
   # Yaml lesson: Even though `>` used, `\` continuation needed
   # when continued lines begin with whitespace.
-  shell: >
+  ansible.builtin.shell: >
     find . -maxdepth 1 \
       -name "virtualbox-version-[0-9]*\\.[0-9]*\\.[0-9]*-index\\.htm" \
       -exec echo {} + \
@@ -103,7 +103,7 @@
 
 - name: Remove old VirtualBox packages
   # E.g., ./virtualbox-5.1_5.1.6-110634~Ubuntu~trusty_amd64.deb
-  shell: >
+  ansible.builtin.shell: >
     find . -maxdepth 1 \
       -name "virtualbox-[0-9]*\\.[0-9]*_[0-9]*\\.[0-9]*\\.[0-9]*-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb" \
       -exec echo {} + \
@@ -118,7 +118,7 @@
 
 - name: Remove old VirtualBox Extension Packs
   # E.g., ./Oracle_VM_VirtualBox_Extension_Pack-6.0.0.vbox-extpack
-  shell: >
+  ansible.builtin.shell: >
     find . -maxdepth 1 \
       -name "Oracle_VM_VirtualBox_Extension_Pack-[0-9]*\\.[0-9]*\\.[0-9]\\.vbox-extpack" \
       -exec echo {} + \

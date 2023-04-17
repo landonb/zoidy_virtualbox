@@ -12,7 +12,7 @@
 
 - name: Create VirtualBox driver signing key
   become: yes
-  shell: |
+  ansible.builtin.shell: |
     openssl req \
       -new \
       -x509 \
@@ -40,7 +40,7 @@
 
 - name: Sign VirtualBox modules with driver signing key
   become: yes
-  shell: |
+  ansible.builtin.shell: |
     for modfile in $(dirname -- "$(modinfo -n vboxdrv)")/*.ko; do
         echo "Signing $modfile"
         /usr/src/linux-headers-$(uname -r)/scripts/sign-file \
