@@ -11,12 +11,6 @@
 
 # ***
 
-#- debug: var=ansible_facts
-
-- debug: var=ansible_kernel
-
-# ***
-
 # ansible_facts.kernel Same as `uname -r`.
 - set_fact:
     zoidy_headers_kernel: linux-headers-{{ ansible_kernel }}
@@ -28,6 +22,8 @@
     - linux-headers-generic
     - "{{ zoidy_headers_kernel }}"
 
+# ***
+
 - name: 'Query latest VirtualBox version'
   get_url:
     url: "http://download.virtualbox.org/virtualbox/LATEST.TXT"
@@ -35,17 +31,23 @@
 
 - name: Read VirtualBox latest version
   command: cat "{{ zoidy_virtualbox_downloads_dir }}/virtualbox-LATEST.TXT"
-  register: virtualbox_latest_version
+  register: virtualbox_latest_version_raw
 
 - set_fact:
-    zoidy_vbox_version_index: "virtualbox-version-{{ virtualbox_latest_version.stdout }}-index.htm"
+    virtualbox_latest_version: "{{ virtualbox_latest_version_raw.stdout }}"
+
+- set_fact:
+    zoidy_vbox_version_index: "virtualbox-version-{{ virtualbox_latest_version }}-index.htm"
 
 - set_fact:
     zoidy_vbox_version_path: "{{ zoidy_virtualbox_downloads_dir }}/{{ zoidy_vbox_version_index }}"
 
+# ***
+
+# E.g., http://download.virtualbox.org/virtualbox/7.0.8/
 - name: 'Query latest VirtualBox builds'
   get_url:
-    url: "http://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version.stdout }}/"
+    url: "http://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version }}/"
     dest: "{{ zoidy_vbox_version_path }}"
 
 - name: Read VirtualBox latest build URI
@@ -60,16 +62,69 @@
 - fail: msg="Undiscerned download URL!"
   when: not virtualbox_deb_pkg.stdout
 
+# ***
+
+# - set_fact:
+#     zoidy_vbox_checksums_path: "{{ zoidy_virtualbox_downloads_dir }}/virtualbox-{{ virtualbox_latest_version }}-SHA256SUMS"
+#
+# # E.g., https://download.virtualbox.org/virtualbox/7.0.8/SHA256SUMS
+# - name: 'Query latest VirtualBox checksums'
+#   get_url:
+#     url: "http://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version }}/SHA256SUMS"
+#     dest: "{{ zoidy_vbox_checksums_path }}"
+#
+# # ***
+#
+# # 2023-04-26: virtualbox-7.0_7.0.8-156879~Ubuntu~jammy_amd64.deb:
+# #   checksum: a5e721c333aeea6301303cefbd1cf7a8520655634f54dc8c32bb3beff73f5ebf
+#
+# - name: Read VirtualBox latest build checksum
+#   ansible.builtin.shell: >
+#     /bin/grep "{{ virtualbox_deb_pkg.stdout }}" "{{ zoidy_vbox_checksums_path }}"
+#     | awk "{print $1}"
+#   register: virtualbox_latest_xsum_raw
+#
+# - set_fact:
+#     virtualbox_latest_xsum: "{{ virtualbox_latest_xsum_raw.stdout }}"
+#
+# - fail: msg="Unsensed download checksum!"
+#   when: not virtualbox_latest_xsum
+
+# ***
+
+# 2023-04-26: Oracle_VM_VirtualBox_Extension_Pack-7.0.8.vbox-extpack:
+#   checksum: 452320f3b1da42b30c32ea5ab5887983b575638ceb4e3beacfefbbb3b0510a48
+
+- set_fact:
+    virtualbox_extpack_name: "Oracle_VM_VirtualBox_Extension_Pack-{{ virtualbox_latest_version }}.vbox-extpack"
+
+# - name: Read VirtualBox extension pack checksum
+#   ansible.builtin.shell: >
+#     /bin/grep "{{ virtualbox_extpack_name }}" "{{ zoidy_vbox_checksums_path }}"
+#     | awk "{print $1}"
+#   register: virtualbox_extpack_xsum_raw
+#
+# - set_fact:
+#     virtualbox_extpack_xsum: "{{ virtualbox_extpack_xsum_raw.stdout }}"
+#
+# - fail: msg="Unsensed extpack checksum!"
+#   when: not virtualbox_extpack_xsum
+
+# ***
+
 - name: 'Download latest VirtualBox'
   get_url:
     # E.g.,
     #   https://download.virtualbox.org/virtualbox/6.0.0/virtualbox-6.0_6.0.0-127566~Ubuntu~bionic_amd64.deb
-    url: "https://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version.stdout }}/{{ virtualbox_deb_pkg.stdout }}"
+    #   https://download.virtualbox.org/virtualbox/7.0.8/virtualbox-7.0_7.0.8-156879~Ubuntu~jammy_amd64.deb
+    url: "https://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version }}/{{ virtualbox_deb_pkg.stdout }}"
     dest: "{{ zoidy_virtualbox_downloads_dir }}/{{ virtualbox_deb_pkg.stdout }}"
+    # checksum: "sha256:{{ virtualbox_latest_xsum }}"
+    checksum: "sha256:http://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version }}/SHA256SUMS"
 
 - name: Install VirtualBox package
   become: yes
-  # E.g., sudo dpkg -i xxx
+  # E.g., sudo dpkg -i <pkg>
   ansible.builtin.apt:
     deb: "{{ zoidy_virtualbox_downloads_dir }}/{{ virtualbox_deb_pkg.stdout }}"
 
@@ -79,8 +134,10 @@
   get_url:
     # E.g.,
     #   https://download.virtualbox.org/virtualbox/6.0.0/Oracle_VM_VirtualBox_Extension_Pack-6.0.0.vbox-extpack
-    url: "https://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version.stdout }}/Oracle_VM_VirtualBox_Extension_Pack-{{ virtualbox_latest_version.stdout }}.vbox-extpack"
+    url: "https://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version }}/{{ virtualbox_extpack_name }}"
     dest: "{{ zoidy_virtualbox_downloads_dir }}/"
+    # checksum: "sha256:{{ virtualbox_extpack_xsum }}"
+    checksum: "sha256:http://download.virtualbox.org/virtualbox/{{ virtualbox_latest_version }}/SHA256SUMS"
 
 # ***
 
@@ -97,9 +154,9 @@
     #| xargs echo
   args:
     chdir: "{{ zoidy_virtualbox_downloads_dir }}"
-  #register: zoidy_rm_vbox_indices
+  # register: zoidy_rm_vbox_indices
 
-#- debug: msg="zoidy_rm_vbox_indices∷ {{ zoidy_rm_vbox_indices.stdout }}"
+# - debug: msg="zoidy_rm_vbox_indices∷ {{ zoidy_rm_vbox_indices.stdout }}"
 
 - name: Remove old VirtualBox packages
   # E.g., ./virtualbox-5.1_5.1.6-110634~Ubuntu~trusty_amd64.deb
@@ -107,14 +164,14 @@
     find . -maxdepth 1 \
       -name "virtualbox-[0-9]*\\.[0-9]*_[0-9]*\\.[0-9]*\\.[0-9]*-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb" \
       -exec echo {} + \
-      | sed s/\\.\\/virtualbox-[0-9]*\\.[0-9]*_{{ virtualbox_latest_version.stdout }}-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb// \
+      | sed s/\\.\\/virtualbox-[0-9]*\\.[0-9]*_{{ virtualbox_latest_version }}-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb// \
       | xargs /bin/rm &> /dev/null
       #| xargs echo
   args:
     chdir: "{{ zoidy_virtualbox_downloads_dir }}"
-  #register: zoidy_rm_vbox_packages
+  # register: zoidy_rm_vbox_packages
 
-#- debug: msg="zoidy_rm_vbox_packages∷ {{ zoidy_rm_vbox_packages.stdout }}"
+# - debug: msg="zoidy_rm_vbox_packages∷ {{ zoidy_rm_vbox_packages.stdout }}"
 
 - name: Remove old VirtualBox Extension Packs
   # E.g., ./Oracle_VM_VirtualBox_Extension_Pack-6.0.0.vbox-extpack
@@ -122,14 +179,16 @@
     find . -maxdepth 1 \
       -name "Oracle_VM_VirtualBox_Extension_Pack-[0-9]*\\.[0-9]*\\.[0-9]\\.vbox-extpack" \
       -exec echo {} + \
-      | sed s/\\.\\/Oracle_VM_VirtualBox_Extension_Pack-{{ virtualbox_latest_version.stdout }}\\.vbox-extpack// \
+      | sed s/\\.\\/Oracle_VM_VirtualBox_Extension_Pack-{{ virtualbox_latest_version }}\\.vbox-extpack// \
       | xargs /bin/rm &> /dev/null
       #| xargs echo
   args:
     chdir: "{{ zoidy_virtualbox_downloads_dir }}"
-  #register: zoidy_rm_vbox_extpacks
+  # register: zoidy_rm_vbox_extpacks
 
-#- debug: msg="zoidy_rm_vbox_extpacks∷ {{ zoidy_rm_vbox_extpacks.stdout }}"
+# - debug: msg="zoidy_rm_vbox_extpacks∷ {{ zoidy_rm_vbox_extpacks.stdout }}"
+
+# ***
 
 # FIXME/2018-12-27: Audit this, now that 6.0 is out: 2 groups still valid?: vboxsf, vboxusers
 - name: 'Add user to VirtualBox groups'
