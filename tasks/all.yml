@@ -13,7 +13,7 @@
 
 # *** Run tasks.
 
-- name: Load role to Download, Get Setup, and Install VirtualBox
+- name: Load tasks to Download, Get Setup, and Install VirtualBox
   include_role:
     name: zoidy_virtualbox
     tasks_from: app-virtualbox-5
