@@ -54,7 +54,7 @@
   # Yaml lesson: `shell: |` multiline preserves newlines, so `\` continuations required.
   #   `shell: >` multiline gobbles newlines, so Bash line continuations unnecessary.
   ansible.builtin.shell: >
-    /bin/grep "{{ zoidy_distrib_codename }}_amd64" {{ zoidy_vbox_version_path }}
+    grep "{{ zoidy_distrib_codename }}_amd64" {{ zoidy_vbox_version_path }}
     | sed -E s/\<[^\>]*\>//g
     | sed -E s/^[\ ]\+\(.*\.deb\).*$/\\1/
   register: virtualbox_deb_pkg
@@ -80,7 +80,7 @@
 #
 # - name: Read VirtualBox latest build checksum
 #   ansible.builtin.shell: >
-#     /bin/grep "{{ virtualbox_deb_pkg.stdout }}" "{{ zoidy_vbox_checksums_path }}"
+#     grep "{{ virtualbox_deb_pkg.stdout }}" "{{ zoidy_vbox_checksums_path }}"
 #     | awk "{print $1}"
 #   register: virtualbox_latest_xsum_raw
 #
@@ -100,7 +100,7 @@
 
 # - name: Read VirtualBox extension pack checksum
 #   ansible.builtin.shell: >
-#     /bin/grep "{{ virtualbox_extpack_name }}" "{{ zoidy_vbox_checksums_path }}"
+#     grep "{{ virtualbox_extpack_name }}" "{{ zoidy_vbox_checksums_path }}"
 #     | awk "{print $1}"
 #   register: virtualbox_extpack_xsum_raw
 #
@@ -150,7 +150,7 @@
       -name "virtualbox-version-[0-9]*\\.[0-9]*\\.[0-9]*-index\\.htm" \
       -exec echo {} + \
     | sed s/\\.\\/{{ zoidy_vbox_version_index }}// \
-    | xargs /bin/rm &> /dev/null
+    | xargs rm &> /dev/null
     #| xargs echo
   args:
     chdir: "{{ zoidy_virtualbox_downloads_dir }}"
@@ -165,7 +165,7 @@
       -name "virtualbox-[0-9]*\\.[0-9]*_[0-9]*\\.[0-9]*\\.[0-9]*-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb" \
       -exec echo {} + \
       | sed s/\\.\\/virtualbox-[0-9]*\\.[0-9]*_{{ virtualbox_latest_version }}-[0-9]*~Ubuntu~[a-zA-Z0-9]*_[a-zA-Z0-9]*\\.deb// \
-      | xargs /bin/rm &> /dev/null
+      | xargs rm &> /dev/null
       #| xargs echo
   args:
     chdir: "{{ zoidy_virtualbox_downloads_dir }}"
@@ -180,7 +180,7 @@
       -name "Oracle_VM_VirtualBox_Extension_Pack-[0-9]*\\.[0-9]*\\.[0-9]\\.vbox-extpack" \
       -exec echo {} + \
       | sed s/\\.\\/Oracle_VM_VirtualBox_Extension_Pack-{{ virtualbox_latest_version }}\\.vbox-extpack// \
-      | xargs /bin/rm &> /dev/null
+      | xargs rm &> /dev/null
       #| xargs echo
   args:
     chdir: "{{ zoidy_virtualbox_downloads_dir }}"
